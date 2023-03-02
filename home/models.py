@@ -7,7 +7,7 @@ from django.core.validators import MinLengthValidator
 
 # Create your models here.
 class Company(models.Model):
-    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    user = models.ForeignKey(User, on_delete=models.CASCADE,related_name="company_owner")
     company_name = models.CharField(max_length=150, null=True, blank=True)
     Company_address = models.TextField(max_length=500, null=True, blank=True)
     GST_number = models.CharField(max_length=15, validators=[MinLengthValidator(15)])

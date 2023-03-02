@@ -49,6 +49,7 @@ class CompanyDataSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
 
+
 class InvoiceDataSerializer(serializers.ModelSerializer):
     class Meta:
         model = Invoice

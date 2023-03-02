@@ -41,7 +41,8 @@ INSTALLED_APPS = [
     'phone_field',
     'corsheaders',
     'rest_framework',
-    'rest_framework.authtoken'
+    'rest_framework.authtoken',
+    'rest_framework_simplejwt'
 
 ]
 
@@ -92,12 +93,14 @@ MIDDLEWARE = [
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
+CSRF_TRUSTED_ORIGINS = ['http://127.0.0.1:8000','http://localhost:3001']
 
-CORS_ORIGIN_ALLOW_ALL = True
-CORS_ORIGIN_WHITELIST = (
-       'http://127.0.0.1:8000',
-)
-
+CORS_ORIGIN_ALLOW_ALL = False
+CORS_ALLOWED_ORIGINS = [
+    "http://localhost:3000",
+    "http://localhost:3001",
+    'http://127.0.0.1:8000',
+]
 ROOT_URLCONF = 'billingdesk.urls'
 
 TEMPLATES = [
