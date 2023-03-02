@@ -1,7 +1,6 @@
 from datetime import datetime
 from django.db import models
 from django.contrib.auth.models import User
-from phone_field import PhoneField
 from django.core.validators import MinLengthValidator
 
 
@@ -11,7 +10,7 @@ class Company(models.Model):
     company_name = models.CharField(max_length=150, null=True, blank=True)
     Company_address = models.TextField(max_length=500, null=True, blank=True)
     GST_number = models.CharField(max_length=15, validators=[MinLengthValidator(15)])
-    Phone_number = PhoneField(blank=True, help_text='Contact phone number')
+    Phone_number = models.CharField(blank=True, )
     created_on = models.DateTimeField(auto_now_add=True)
     state = models.CharField(max_length=15, null=True, blank=True)
     country = models.CharField(max_length=15, null=True, blank=True)
@@ -37,7 +36,7 @@ class Invoice(models.Model):
     created_on = models.DateTimeField(auto_now_add=True)
     payment_method = models.CharField(max_length=10, choices=PAYMENT_CHOICES, default='cash')
     customer_name = models.CharField(max_length=50)
-    Phone_number = PhoneField(blank=True, help_text='Contact phone number')
+    Phone_number = models.CharField(blank=True)
 
     def save(self, *args, **kwargs):
         today = datetime.today()

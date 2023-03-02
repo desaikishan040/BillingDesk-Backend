@@ -38,7 +38,6 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'home',
-    'phone_field',
     'corsheaders',
     'rest_framework',
     'rest_framework.authtoken',
