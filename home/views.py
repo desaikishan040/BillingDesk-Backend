@@ -29,7 +29,17 @@ class CompanyView(APIView):
         else:
             return Response({"status": "error", "data": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
 
-  
+    def get(self, request, *args, **kwargs):
+        company = Company.objects.filter(user=request.user.id).values()
+        if company:
+            return Response({"status": "success", "data": company}, status=status.HTTP_200_OK)
+        else:
+            return Response({"status": "error", "data": "Company not found"}, status=status.HTTP_200_OK)
+        #     return Response({"status": "success", "data": serializer.data}, status=status.HTTP_200_OK)
+        # else:
+        #     return Response({"status": "error", "data": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
+
+
 @permission_classes([IsAuthenticated])
 class InvoiceView(APIView):
 
