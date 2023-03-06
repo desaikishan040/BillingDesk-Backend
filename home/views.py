@@ -9,7 +9,7 @@ from rest_framework.authtoken.models import Token
 from rest_framework import status
 from rest_framework.decorators import permission_classes
 from rest_framework.permissions import IsAuthenticated
-from .models import Company
+from .models import Company,Items
 
 
 class RegisterUserAPIView(generics.CreateAPIView):
@@ -59,6 +59,12 @@ class InvoiceView(APIView):
 
 @permission_classes([IsAuthenticated])
 class ItemsView(APIView):
+    def get(self, request, *args, **kwargs):
+        items = Items.objects.filter(created_by_user=request.user.id, created_by_company=request.GET.get("created_by_company")).values()
+        if items:
+            return Response({"status": "success", "data":items}, status=status.HTTP_200_OK)
+        else:
+            return Response({"status": "error", "data": "No any Item found"}, status=status.HTTP_400_BAD_REQUEST)
 
     def post(self, request, *args, **kwargs):
         request.data._mutable = True
@@ -77,7 +83,7 @@ class ItemsView(APIView):
 
 @permission_classes([IsAuthenticated])
 class InvoiceItemsView(APIView):
-
+   
     def post(self, request, *args, **kwargs):
         request.data._mutable = True
 

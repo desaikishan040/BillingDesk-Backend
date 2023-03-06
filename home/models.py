@@ -8,7 +8,7 @@ from phone_field import PhoneField
 class Company(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE,related_name="company_owner")
     company_name = models.CharField(max_length=150, null=True, blank=True)
-    GST_number = models.CharField(max_length=15, validators=[MinLengthValidator(15)])
+    GST_number = models.CharField(max_length=15)
     Phone_number =  models.CharField(blank=True, max_length=13)
     company_mail = models.EmailField(blank=True)
     state = models.CharField(max_length=15, null=True, blank=True)
