@@ -37,6 +37,7 @@ class Invoice(models.Model):
     payment_method = models.CharField(max_length=10, choices=PAYMENT_CHOICES, default='cash')
     customer_name = models.CharField(max_length=50)
     Phone_number = PhoneField(blank=True,  max_length=13)
+    coustomer_mail = models.EmailField(blank=True)
 
     def save(self, *args, **kwargs):
         today = datetime.today()

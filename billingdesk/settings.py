@@ -136,7 +136,7 @@ DATABASES = {
         'USER': 'lanet',
         'PASSWORD': 'SuperAdmin321',
         'HOST': 'localhost',
-        'PORT': ''
+        'PORT': '5432'
     }
 }
 
