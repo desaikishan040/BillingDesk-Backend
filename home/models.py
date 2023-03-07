@@ -16,7 +16,7 @@ class Company(models.Model):
     currency = models.CharField(max_length=15, null=False)
     Company_address = models.TextField(max_length=500, null=True, blank=True)
     created_on = models.DateTimeField(auto_now_add=True)
-    profile_image = models.ImageField(upload_to='images/')
+    profile_image = models.ImageField(upload_to='images/',null=True, blank=True)
 
 
 PAYMENT_CHOICES = (
