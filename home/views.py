@@ -9,7 +9,7 @@ from rest_framework.authtoken.models import Token
 from rest_framework import status
 from rest_framework.decorators import permission_classes
 from rest_framework.permissions import IsAuthenticated
-from .models import Company,Items
+from .models import Company, Items, InvoiceItems, Invoice
 
 
 class RegisterUserAPIView(generics.CreateAPIView):
@@ -50,6 +50,7 @@ class InvoiceView(APIView):
             serializer = InvoiceDataSerializer(data=request.data)
             if serializer.is_valid():
                 serializer.save()
+
                 return Response({"status": "success", "data": serializer.data}, status=status.HTTP_200_OK)
             else:
                 return Response({"status": "error", "data": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
@@ -60,15 +61,13 @@ class InvoiceView(APIView):
 @permission_classes([IsAuthenticated])
 class ItemsView(APIView):
     def get(self, request, *args, **kwargs):
-        items = Items.objects.filter(created_by_user=request.user.id, created_by_company=request.GET.get("created_by_company")).values()
+        items = Items.objects.filter(created_by_user=request.user.id,
+                                     created_by_company=request.GET.get("created_by_company")).values()
         if items:
-            return Response({"status": "success", "data":items}, status=status.HTTP_200_OK)
+            return Response({"status": "success", "data": items}, status=status.HTTP_200_OK)
         else:
-<<<<<<< Updated upstream
-            return Response({"status": "error", "data": "No any Item found Please add item or change company"}, status=status.HTTP_400_BAD_REQUEST)
-=======
-            return Response({"status": "error", "data": "No any Item found"}, status=status.HTTP_400_BAD_REQUEST)
->>>>>>> Stashed changes
+            return Response({"status": "error", "data": "No any Item found Please add item or change company"},
+                            status=status.HTTP_400_BAD_REQUEST)
 
     def post(self, request, *args, **kwargs):
         request.data._mutable = True
@@ -87,17 +86,17 @@ class ItemsView(APIView):
 
 @permission_classes([IsAuthenticated])
 class InvoiceItemsView(APIView):
-   
-    def post(self, request, *args, **kwargs):
-        request.data._mutable = True
 
-        request.data['created_by_user'] = request.user.id
-        serializer = InvoiceItemsSerializer(data=request.data)
-        if serializer.is_valid():
-            serializer.save()
-            return Response({"status": "success", "data": serializer.data}, status=status.HTTP_200_OK)
-        else:
-            return Response({"status": "error", "data": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
+    def post(self, request, *args, **kwargs):
+        print(request.data)
+        for x in request.data:
+
+            serializer = InvoiceItemsSerializer(data=x)
+            if serializer.is_valid():
+                serializer.save()
+            else:
+                return Response({"status": "error", "data": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
+        return Response({"status": "success", "data": "bill generated"}, status=status.HTTP_200_OK)
 
 
 @api_view(['POST'])
@@ -106,6 +105,26 @@ def authenticate_token(request):
     print(token)
     token = Token.objects.create(user=token)
     return Response(token.key)
+
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def Getallcompany(request):
+    company = Company.objects.all().values()
+    if company:
+        return Response({"status": "success", "data": company}, status=status.HTTP_200_OK)
+    else:
+        return Response({"status": "error", "data": "Company not found"}, status=status.HTTP_200_OK)
+
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def Getallbill(request):
+    company = Invoice.objects.filter(company_to = 2).values()
+    if company:
+        return Response({"status": "success", "data": company}, status=status.HTTP_200_OK)
+    else:
+        return Response({"status": "error", "data": "Company not found"}, status=status.HTTP_200_OK)
 
 
 @api_view(['GET'])

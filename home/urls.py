@@ -13,5 +13,8 @@ urlpatterns = [
     path('generate-invoice', views.InvoiceView.as_view(), name="invoice"),
     path('add-item', views.ItemsView.as_view(), name="invoiceitems"),
     path('add-ordered-item', views.InvoiceItemsView.as_view(), name="invoiceitems"),
+    path('getallcompany', views.Getallcompany, name="getallcompany"),
+    path('getallbill', views.Getallbill, name="demo"),
     path('demo', views.Demo, name="demo"),
+
 ]

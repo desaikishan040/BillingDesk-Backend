@@ -1,22 +1,21 @@
 from datetime import datetime
 from django.db import models
 from django.contrib.auth.models import User
-from django.core.validators import MinLengthValidator
-from phone_field import PhoneField
+
 
 # Create your models here.
 class Company(models.Model):
-    user = models.ForeignKey(User, on_delete=models.CASCADE,related_name="company_owner")
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="company_owner")
     company_name = models.CharField(max_length=150, null=True, blank=True)
     GST_number = models.CharField(max_length=15)
-    Phone_number =  models.CharField(blank=True, max_length=13)
+    Phone_number = models.CharField(blank=True, max_length=13)
     company_mail = models.EmailField(blank=True)
     state = models.CharField(max_length=15, null=True, blank=True)
     country = models.CharField(max_length=15, null=True, blank=True)
     currency = models.CharField(max_length=15, null=False)
     Company_address = models.TextField(max_length=500, null=True, blank=True)
     created_on = models.DateTimeField(auto_now_add=True)
-    profile_image = models.ImageField(upload_to='images/',null=True, blank=True)
+    profile_image = models.ImageField(upload_to='images/', null=True, blank=True)
 
 
 PAYMENT_CHOICES = (
@@ -35,8 +34,8 @@ class Invoice(models.Model):
     invoice_no = models.AutoField(primary_key=True, editable=False)
     created_on = models.DateTimeField(auto_now_add=True)
     payment_method = models.CharField(max_length=10, choices=PAYMENT_CHOICES, default='cash')
-    customer_name = models.CharField(max_length=50)
-    Phone_number = PhoneField(blank=True,  max_length=13)
+    customer_name = models.CharField(max_length=50, blank=True)
+    Phone_number =  models.CharField(blank=True, max_length=13)
     coustomer_mail = models.EmailField(blank=True)
 
     def save(self, *args, **kwargs):
