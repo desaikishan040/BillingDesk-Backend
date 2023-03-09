@@ -64,7 +64,11 @@ class ItemsView(APIView):
         if items:
             return Response({"status": "success", "data":items}, status=status.HTTP_200_OK)
         else:
+<<<<<<< Updated upstream
             return Response({"status": "error", "data": "No any Item found Please add item or change company"}, status=status.HTTP_400_BAD_REQUEST)
+=======
+            return Response({"status": "error", "data": "No any Item found"}, status=status.HTTP_400_BAD_REQUEST)
+>>>>>>> Stashed changes
 
     def post(self, request, *args, **kwargs):
         request.data._mutable = True
