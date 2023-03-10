@@ -3,13 +3,14 @@ from rest_framework.permissions import AllowAny
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from .serializer import RegisterSerializer, CompanyDataSerializer, InvoiceDataSerializer, \
-    ItemsSerializer, InvoiceItemsSerializer
+    ItemsSerializer, InvoiceItemsSerializer, NewInvoiceItemsSerializer,InvoiceFullDataSerializer
 from rest_framework import generics
 from rest_framework.authtoken.models import Token
 from rest_framework import status
 from rest_framework.decorators import permission_classes
 from rest_framework.permissions import IsAuthenticated
 from .models import Company, Items, InvoiceItems, Invoice
+from django.db.models import F
 
 
 class RegisterUserAPIView(generics.CreateAPIView):
@@ -42,6 +43,11 @@ class CompanyView(APIView):
 
 @permission_classes([IsAuthenticated])
 class InvoiceView(APIView):
+    def get(self, request, *args, **kwargs):
+
+        singleinvoicedata = InvoiceItems.objects.filter(invoice_id=request.GET.get("invoice_no")).select_related('ordered_item').select_related('invoice_id').order_by('created_on')
+        serialized_data = InvoiceFullDataSerializer(singleinvoicedata, many=True)
+        return Response({"status": "success", "data": serialized_data.data}, status=status.HTTP_200_OK)
 
     def post(self, request, *args, **kwargs):
         request.data._mutable = True
@@ -120,11 +126,16 @@ def Getallcompany(request):
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def Getallbill(request):
-    company = Invoice.objects.filter(company_to = 2).values()
-    if company:
-        return Response({"status": "success", "data": company}, status=status.HTTP_200_OK)
+    sendboxdata = Invoice.objects.filter(company_to=2).select_related('company_from').order_by('created_on')
+    inboxdata = Invoice.objects.filter(company_from=2).select_related('company_from').order_by('created_on')
+    serialized_sendbox = NewInvoiceItemsSerializer(sendboxdata, many=True)
+    serialized_inbox = NewInvoiceItemsSerializer(inboxdata, many=True)
+    if sendboxdata:
+        return Response(
+            {"status": "success", "sendboxdata": serialized_sendbox.data, "inboxdata": serialized_inbox.data},
+            status=status.HTTP_200_OK)
     else:
-        return Response({"status": "error", "data": "Company not found"}, status=status.HTTP_200_OK)
+        return Response({"status": "error", "data": "No any bill found"}, status=status.HTTP_200_OK)
 
 
 @api_view(['GET'])
