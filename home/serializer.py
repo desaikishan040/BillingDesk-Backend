@@ -68,10 +68,11 @@ class InvoiceItemsSerializer(serializers.ModelSerializer):
 
 class NewInvoiceItemsSerializer(serializers.ModelSerializer):
     company_from = CompanyDataSerializer(read_only=True)
+    company_to = CompanyDataSerializer(read_only=True)
     class Meta:
         model = Invoice
         fields = '__all__'
-        
+
 class InvoiceFullDataSerializer(serializers.ModelSerializer):
     invoice_id = NewInvoiceItemsSerializer(read_only=True)
     ordered_item = ItemsSerializer(read_only=True)

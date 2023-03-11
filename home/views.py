@@ -126,11 +126,14 @@ def Getallcompany(request):
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def Getallbill(request):
-    sendboxdata = Invoice.objects.filter(company_to=2).select_related('company_from').order_by('created_on')
-    inboxdata = Invoice.objects.filter(company_from=2).select_related('company_from').order_by('created_on')
+    print("----------->",request.GET.get("company_id"))
+    sendboxdata = Invoice.objects.filter(company_to=request.GET.get("company_id")).select_related('company_from').order_by('created_on')
+    inboxdata = Invoice.objects.filter(company_from=request.GET.get("company_id")).select_related('company_from').order_by('created_on')
+    print("----------->",inboxdata)
+
     serialized_sendbox = NewInvoiceItemsSerializer(sendboxdata, many=True)
     serialized_inbox = NewInvoiceItemsSerializer(inboxdata, many=True)
-    if sendboxdata:
+    if sendboxdata or inboxdata:
         return Response(
             {"status": "success", "sendboxdata": serialized_sendbox.data, "inboxdata": serialized_inbox.data},
             status=status.HTTP_200_OK)
