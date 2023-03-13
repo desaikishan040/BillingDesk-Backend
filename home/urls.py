@@ -16,5 +16,5 @@ urlpatterns = [
     path('getallcompany', views.Getallcompany, name="getallcompany"),
     path('getallbill', views.Getallbill, name="demo"),
     path('demo', views.Demo, name="demo"),
-
+    path('accounts/', include('django.contrib.auth.urls')),
 ]
