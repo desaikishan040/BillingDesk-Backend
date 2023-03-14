@@ -35,8 +35,8 @@ class Invoice(models.Model):
     created_on = models.DateTimeField(auto_now_add=True)
     payment_method = models.CharField(max_length=10, choices=PAYMENT_CHOICES, default='cash')
     customer_name = models.CharField(max_length=50, blank=True)
-    Phone_number =  models.CharField(blank=True, max_length=13)
-    total =  models.CharField(max_length=20)
+    Phone_number = models.CharField(blank=True, max_length=13)
+    total = models.IntegerField()
     coustomer_mail = models.EmailField(blank=True)
 
     def save(self, *args, **kwargs):
@@ -60,7 +60,7 @@ class Items(models.Model):
     purchase_price = models.IntegerField(blank=False, null=False)
     profit_amount = models.IntegerField(blank=True, null=True)
     created_on = models.DateTimeField(auto_now_add=True)
-    item_image = models.ImageField(upload_to='items/')
+    item_image = models.ImageField(upload_to='items/', blank=True, null=True)
 
     def save(self, *args, **kwargs):
         self.profit_amount = (self.MRP_price_per_unit - self.purchase_price - (

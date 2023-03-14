@@ -1,3 +1,4 @@
+from django.db.models import Sum, Count
 from rest_framework.decorators import api_view
 from rest_framework.permissions import AllowAny
 from rest_framework.views import APIView
@@ -10,6 +11,8 @@ from rest_framework import status
 from rest_framework.decorators import permission_classes
 from rest_framework.permissions import IsAuthenticated
 from .models import Company, Items, InvoiceItems, Invoice
+from django.utils import timezone
+from datetime import timedelta
 
 
 class RegisterUserAPIView(generics.CreateAPIView):
@@ -19,7 +22,6 @@ class RegisterUserAPIView(generics.CreateAPIView):
 
 @permission_classes([IsAuthenticated])
 class CompanyView(APIView):
-
     def post(self, request, *args, **kwargs):
         request.data['user'] = request.user.id
         serializer = CompanyDataSerializer(data=request.data)
@@ -35,15 +37,11 @@ class CompanyView(APIView):
             return Response({"status": "success", "data": company}, status=status.HTTP_200_OK)
         else:
             return Response({"status": "error", "data": "Company not found"}, status=status.HTTP_200_OK)
-        #     return Response({"status": "success", "data": serializer.data}, status=status.HTTP_200_OK)
-        # else:
-        #     return Response({"status": "error", "data": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
 
 
 @permission_classes([IsAuthenticated])
 class InvoiceView(APIView):
     def get(self, request, *args, **kwargs):
-
         singleinvoicedata = InvoiceItems.objects.filter(invoice_id=request.GET.get("invoice_no")).select_related(
             'ordered_item').select_related('invoice_id').order_by('created_on')
         serialized_data = InvoiceFullDataSerializer(singleinvoicedata, many=True)
@@ -92,11 +90,9 @@ class ItemsView(APIView):
 
 @permission_classes([IsAuthenticated])
 class InvoiceItemsView(APIView):
-
     def post(self, request, *args, **kwargs):
         print(request.data)
         for x in request.data:
-
             serializer = InvoiceItemsSerializer(data=x)
             if serializer.is_valid():
                 serializer.save()
@@ -141,7 +137,62 @@ def Getallbill(request):
         return Response({"status": "error", "data": "No any bill found"}, status=status.HTTP_200_OK)
 
 
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def UpdateItem(request):
+    request.data._mutable = True
+    request.data['created_by_user'] = request.user.id
+    itemdata = Items.objects.get(created_by_company=request.data["created_by_company"], id=request.data["id"])
+    serializer = ItemsSerializer(itemdata, data=request.data)
+    if serializer.is_valid():
+        serializer.save()
+        return Response({"status": "success", "data": serializer.data}, status=status.HTTP_200_OK)
+    else:
+        return Response({"status": "error", "data": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
+
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def UpdateCompany(request):
+    request.data._mutable = True
+    print(request.data)
+    request.data['user'] = request.user.id
+    companydata = Company.objects.get(id=request.data["id"], user=request.user.id)
+    serializer = CompanyDataSerializer(companydata, data=request.data)
+    if serializer.is_valid():
+        serializer.save()
+        return Response({"status": "success", "data": serializer.data}, status=status.HTTP_200_OK)
+    else:
+        return Response({"status": "error", "data": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
+
+
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
-def Demo(request):
-    return Response({"token": "key"})
+def Dashboard(request):
+    some_day_last_week = timezone.now().date() - timedelta(days=7)
+    total_sales = Invoice.objects.filter(created_on__gte=some_day_last_week,
+                                         company_to=request.GET.get("company_id")).values(
+        'created_on__date'
+    ).annotate(
+        created_date_count=Count('created_on__date')
+    ).annotate(
+        day_collection=Sum('total')
+    ).order_by('-created_on__date')
+    if total_sales:
+        return Response({"status": "success", "data": total_sales}, status=status.HTTP_200_OK)
+    else:
+        return Response({"status": "error", "data": "No data found for dashboard"}, status=status.HTTP_400_BAD_REQUEST)
+
+
+@api_view(['GET'])
+def demo(request):
+    some_day_last_week = timezone.now().date() - timedelta(days=7)
+
+    total_sales = Invoice.objects.filter(created_on__gte=some_day_last_week, ).values(
+        'created_on__date'
+    ).annotate(
+        created_date_count=Count('created_on__date')
+    ).annotate(
+        day_collection=Sum('total')
+    )
+    return Response({"status": "success", "data": total_sales}, status=status.HTTP_200_OK)
