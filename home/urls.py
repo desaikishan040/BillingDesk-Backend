@@ -18,13 +18,14 @@ urlpatterns = [
     path('add-ordered-item', views.InvoiceItemsView.as_view(), name="invoiceitems"),
     # alldata fetching api
     path('getallcompany', views.Getallcompany, name="getallcompany"),
-    path('getallbill', views.Getallbill, name="demo"),
+    path('getinboxbill', views.Getinboxbill, name="getinboxbill"),
+    path('getsendboxbill', views.Getsendboxbill, name="getsendboxbill"),
     # update
-    path('update-item', views.UpdateItem, name="demo"),
-    path('update-company', views.UpdateCompany, name="demo"),
+    path('update-item', views.UpdateItem, name="update-item"),
+    path('update-company', views.UpdateCompany, name="update-company"),
     # dashboard
-    path('dashboard-data', views.Dashboard, name="demo"),
+    path('dashboard-data', views.Dashboard, name="dashboard-data"),
     # demo
-    path('demo', views.demo, name="demo"),
+    path('demo', views.demo , name="demo"),
 
 ]

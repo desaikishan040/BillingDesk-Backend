@@ -13,6 +13,7 @@ from rest_framework.permissions import IsAuthenticated
 from .models import Company, Items, InvoiceItems, Invoice
 from django.utils import timezone
 from datetime import timedelta
+from django.core.paginator import Paginator
 
 
 class RegisterUserAPIView(generics.CreateAPIView):
@@ -121,17 +122,41 @@ def Getallcompany(request):
 
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
-def Getallbill(request):
-    sendboxdata = Invoice.objects.filter(company_to=request.GET.get("company_id")).select_related(
-        'company_from').order_by('-created_on')
+def Getinboxbill(request):
     inboxdata = Invoice.objects.filter(company_from=request.GET.get("company_id")).select_related(
         'company_from').order_by('-created_on')
 
-    serialized_sendbox = NewInvoiceItemsSerializer(sendboxdata, many=True)
-    serialized_inbox = NewInvoiceItemsSerializer(inboxdata, many=True)
-    if sendboxdata or inboxdata:
+    paginator = Paginator(inboxdata, 10)
+    page_number = request.GET.get('page')
+    if page_number is None:
+        page_number = 1
+    data = paginator.get_page(page_number)
+    serialized_inbox = NewInvoiceItemsSerializer(data, many=True)
+    totalnumpages = data.paginator.num_pages
+    if serialized_inbox.data:
         return Response(
-            {"status": "success", "sendboxdata": serialized_sendbox.data, "inboxdata": serialized_inbox.data},
+            {"status": "success", "totalnumpages": totalnumpages, "inboxdata": serialized_inbox.data},
+            status=status.HTTP_200_OK)
+    else:
+        return Response({"status": "error", "data": "No any bill found"}, status=status.HTTP_200_OK)
+
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def Getsendboxbill(request):
+    sendboxdata = Invoice.objects.filter(company_to=request.GET.get("company_id")).select_related(
+        'company_from').order_by('-created_on')
+    paginator = Paginator(sendboxdata, 10)
+    page_number = request.GET.get('page')
+    if page_number is None:
+        page_number = 1
+    data = paginator.get_page(page_number)
+    serialized_sendbox = NewInvoiceItemsSerializer(data, many=True)
+
+    totalnumpages = data.paginator.num_pages
+    if serialized_sendbox.data:
+        return Response(
+            {"status": "success", "totalnumpages": totalnumpages, "sendboxdata": serialized_sendbox.data},
             status=status.HTTP_200_OK)
     else:
         return Response({"status": "error", "data": "No any bill found"}, status=status.HTTP_200_OK)
@@ -178,8 +203,22 @@ def Dashboard(request):
     ).annotate(
         day_collection=Sum('total')
     ).order_by('-created_on__date')
+    total_inboxdata_amount = Invoice.objects.filter(company_to=request.GET.get("company_id")).aggregate(Sum('total'))
+    total_inboxdata_count = Invoice.objects.filter(company_to=request.GET.get("company_id")).aggregate(
+        Count('invoice_no'))
+    total_sendinboxdata_amount = Invoice.objects.filter(company_from=request.GET.get("company_id")).aggregate(
+        Sum('total'))
+    total_sendinboxdata_count = Invoice.objects.filter(company_from=request.GET.get("company_id")).aggregate(
+        Count('invoice_no'))
+    card_data = {
+        "total_inboxdata_amount": total_inboxdata_amount,
+        "total_inboxdata_count": total_inboxdata_count,
+        "total_sendinboxdata_amount": total_sendinboxdata_amount,
+        "total_sendinboxdata_count": total_sendinboxdata_count
+    }
     if total_sales:
-        return Response({"status": "success", "data": total_sales}, status=status.HTTP_200_OK)
+        return Response({"status": "success", "data": total_sales, "card_data": card_data},
+                        status=status.HTTP_200_OK)
     else:
         return Response({"status": "error", "data": "No data found for dashboard"}, status=status.HTTP_400_BAD_REQUEST)
 
