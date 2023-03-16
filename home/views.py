@@ -4,7 +4,7 @@ from rest_framework.permissions import AllowAny
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from .serializer import RegisterSerializer, CompanyDataSerializer, InvoiceDataSerializer, \
-    ItemsSerializer, InvoiceItemsSerializer, NewInvoiceItemsSerializer, InvoiceFullDataSerializer
+    ItemsSerializer, InvoiceItemsSerializer, NewInvoiceItemsSerializer, InvoiceFullDataSerializer, ExpanseDataSerializer
 from rest_framework import generics
 from rest_framework.authtoken.models import Token
 from rest_framework import status
@@ -38,6 +38,18 @@ class CompanyView(APIView):
             return Response({"status": "success", "data": company}, status=status.HTTP_200_OK)
         else:
             return Response({"status": "error", "data": "Company not found"}, status=status.HTTP_200_OK)
+
+
+@permission_classes([IsAuthenticated])
+class ExpanseView(APIView):
+    def post(self, request, *args, **kwargs):
+        request.data['user'] = request.user.id
+        serializer = ExpanseDataSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response({"status": "success", "data": serializer.data}, status=status.HTTP_200_OK)
+        else:
+            return Response({"status": "error", "data": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
 
 
 @permission_classes([IsAuthenticated])
@@ -144,8 +156,18 @@ def Getinboxbill(request):
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def Getsendboxbill(request):
-    sendboxdata = Invoice.objects.filter(company_to=request.GET.get("company_id")).select_related(
-        'company_from').order_by('-created_on')
+    query = request.GET.get("query")
+    if query == "All":
+        sendboxdata = Invoice.objects.filter(company_to=request.GET.get("company_id")).select_related(
+            'company_from').order_by('-created_on')
+    elif query == "company":
+        sendboxdata = Invoice.objects.filter(company_to=request.GET.get("company_id"),
+                                             company_from__isnull=False).select_related(
+            'company_from').order_by('-created_on')
+    elif query == "coustomer":
+        sendboxdata = Invoice.objects.filter(company_to=request.GET.get("company_id"),
+                                             company_from__isnull=True).select_related(
+            'company_from').order_by('-created_on')
     paginator = Paginator(sendboxdata, 10)
     page_number = request.GET.get('page')
     if page_number is None:

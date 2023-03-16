@@ -12,6 +12,8 @@ urlpatterns = [
     path('token/verify', TokenVerifyView.as_view(), name="tokenverify"),
     # company
     path('company', views.CompanyView.as_view(), name="company"),
+    # expanse
+    path('company', views.ExpanseView.as_view(), name="company"),
     # invoice
     path('generate-invoice', views.InvoiceView.as_view(), name="invoice"),
     path('add-item', views.ItemsView.as_view(), name="invoiceitems"),
@@ -26,6 +28,6 @@ urlpatterns = [
     # dashboard
     path('dashboard-data', views.Dashboard, name="dashboard-data"),
     # demo
-    path('demo', views.demo , name="demo"),
+    path('demo', views.demo, name="demo"),
 
 ]

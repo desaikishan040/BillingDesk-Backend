@@ -4,7 +4,7 @@ from rest_framework import serializers
 from django.contrib.auth.models import User
 from rest_framework.validators import UniqueValidator
 from django.contrib.auth.password_validation import validate_password
-from .models import Company, Invoice, Items, InvoiceItems
+from .models import Company, Invoice, Items, InvoiceItems, Expanse
 
 
 class RegisterSerializer(serializers.ModelSerializer):
@@ -49,6 +49,12 @@ class CompanyDataSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
 
+class ExpanseDataSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Expanse
+        fields = '__all__'
+
+
 class InvoiceDataSerializer(serializers.ModelSerializer):
     class Meta:
         model = Invoice
@@ -66,16 +72,20 @@ class InvoiceItemsSerializer(serializers.ModelSerializer):
         model = InvoiceItems
         fields = '__all__'
 
+
 class NewInvoiceItemsSerializer(serializers.ModelSerializer):
     company_from = CompanyDataSerializer(read_only=True)
     company_to = CompanyDataSerializer(read_only=True)
+
     class Meta:
         model = Invoice
         fields = '__all__'
 
+
 class InvoiceFullDataSerializer(serializers.ModelSerializer):
     invoice_id = NewInvoiceItemsSerializer(read_only=True)
     ordered_item = ItemsSerializer(read_only=True)
+
     class Meta:
         model = InvoiceItems
         fields = '__all__'
