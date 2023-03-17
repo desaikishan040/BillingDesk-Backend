@@ -13,7 +13,7 @@ urlpatterns = [
     # company
     path('company', views.CompanyView.as_view(), name="company"),
     # expanse
-    path('company', views.ExpanseView.as_view(), name="company"),
+    path('expanse', views.ExpanseView.as_view(), name="company"),
     # invoice
     path('generate-invoice', views.InvoiceView.as_view(), name="invoice"),
     path('add-item', views.ItemsView.as_view(), name="invoiceitems"),

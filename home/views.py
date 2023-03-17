@@ -1,4 +1,4 @@
-from django.db.models import Sum, Count
+from django.db.models import Sum, Count, Q
 from rest_framework.decorators import api_view
 from rest_framework.permissions import AllowAny
 from rest_framework.views import APIView
@@ -10,7 +10,7 @@ from rest_framework.authtoken.models import Token
 from rest_framework import status
 from rest_framework.decorators import permission_classes
 from rest_framework.permissions import IsAuthenticated
-from .models import Company, Items, InvoiceItems, Invoice
+from .models import Company, Items, InvoiceItems, Invoice, Expanse
 from django.utils import timezone
 from datetime import timedelta
 from django.core.paginator import Paginator
@@ -43,6 +43,7 @@ class CompanyView(APIView):
 @permission_classes([IsAuthenticated])
 class ExpanseView(APIView):
     def post(self, request, *args, **kwargs):
+        request.data._mutable = True
         request.data['user'] = request.user.id
         serializer = ExpanseDataSerializer(data=request.data)
         if serializer.is_valid():
@@ -50,6 +51,14 @@ class ExpanseView(APIView):
             return Response({"status": "success", "data": serializer.data}, status=status.HTTP_200_OK)
         else:
             return Response({"status": "error", "data": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
+
+    def get(self, request, *args, **kwargs):
+        data = Expanse.objects.filter(user=request.user.id, company=request.GET.get("company_id")).order_by(
+            '-created_on').values()
+        if data:
+            return Response({"status": "success", "data": data}, status=status.HTTP_200_OK)
+        else:
+            return Response({"status": "error", "data": "data not found"}, status=status.HTTP_400_BAD_REQUEST)
 
 
 @permission_classes([IsAuthenticated])
@@ -157,31 +166,54 @@ def Getinboxbill(request):
 @permission_classes([IsAuthenticated])
 def Getsendboxbill(request):
     query = request.GET.get("query")
-    if query == "All":
-        sendboxdata = Invoice.objects.filter(company_to=request.GET.get("company_id")).select_related(
-            'company_from').order_by('-created_on')
-    elif query == "company":
-        sendboxdata = Invoice.objects.filter(company_to=request.GET.get("company_id"),
-                                             company_from__isnull=False).select_related(
-            'company_from').order_by('-created_on')
-    elif query == "coustomer":
-        sendboxdata = Invoice.objects.filter(company_to=request.GET.get("company_id"),
-                                             company_from__isnull=True).select_related(
-            'company_from').order_by('-created_on')
-    paginator = Paginator(sendboxdata, 10)
-    page_number = request.GET.get('page')
-    if page_number is None:
-        page_number = 1
-    data = paginator.get_page(page_number)
-    serialized_sendbox = NewInvoiceItemsSerializer(data, many=True)
+    some_day_last_week = timezone.now().date() - timedelta(days=7)
 
-    totalnumpages = data.paginator.num_pages
+    kwargs = {
+    }
+
+    if query == "company":
+        kwargs = {
+            '{0}__{1}'.format('company_from', "isnull"): False
+        }
+    elif query == "coustomer":
+        kwargs = {
+            '{0}__{1}'.format('company_from', "isnull"): True
+        }
+
+    sendboxdata = Invoice.objects.filter(company_to=request.GET.get("company_id"), **kwargs).select_related(
+        'company_from').order_by('-created_on')
+
+    total_sales = Invoice.objects.filter(created_on__gte=some_day_last_week,
+                                         company_to=request.GET.get("company_id"), **kwargs).values(
+        'created_on__date'
+    ).annotate(
+        created_date_count=Count('created_on__date')
+    ).annotate(
+        day_collection=Sum('total')
+    ).order_by('-created_on__date')
+
+    total_sendinboxdata_amount = Invoice.objects.filter(company_to=request.GET.get("company_id"), **kwargs).aggregate(
+        Sum('total'))
+
+    total_sendinboxdata_count = Invoice.objects.filter(company_to=request.GET.get("company_id"), **kwargs).aggregate(
+        Count('invoice_no'))
+
+    serialized_sendbox = NewInvoiceItemsSerializer(sendboxdata, many=True)
+
+    card_data = {
+        "total_sales": total_sales,
+        "total_sendinboxdata_amount": total_sendinboxdata_amount,
+        "total_sendinboxdata_count": total_sendinboxdata_count
+    }
+
     if serialized_sendbox.data:
         return Response(
-            {"status": "success", "totalnumpages": totalnumpages, "sendboxdata": serialized_sendbox.data},
+            {"status": "success", "sendboxdata": serialized_sendbox.data, "card_data": card_data, "report_type": query},
             status=status.HTTP_200_OK)
     else:
-        return Response({"status": "error", "data": "No any bill found"}, status=status.HTTP_200_OK)
+        return Response(
+            {"status": "error", "data": "No any bill found"},
+            status=status.HTTP_200_OK)
 
 
 @api_view(['POST'])
@@ -216,30 +248,17 @@ def UpdateCompany(request):
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def Dashboard(request):
-    some_day_last_week = timezone.now().date() - timedelta(days=7)
-    total_sales = Invoice.objects.filter(created_on__gte=some_day_last_week,
-                                         company_to=request.GET.get("company_id")).values(
-        'created_on__date'
-    ).annotate(
-        created_date_count=Count('created_on__date')
-    ).annotate(
-        day_collection=Sum('total')
-    ).order_by('-created_on__date')
-    total_inboxdata_amount = Invoice.objects.filter(company_to=request.GET.get("company_id")).aggregate(Sum('total'))
-    total_inboxdata_count = Invoice.objects.filter(company_to=request.GET.get("company_id")).aggregate(
+    total_inboxdata_amount = Invoice.objects.filter(company_from=request.GET.get("company_id")).aggregate(Sum('total'))
+    total_inboxdata_count = Invoice.objects.filter(company_from=request.GET.get("company_id")).aggregate(
         Count('invoice_no'))
-    total_sendinboxdata_amount = Invoice.objects.filter(company_from=request.GET.get("company_id")).aggregate(
-        Sum('total'))
-    total_sendinboxdata_count = Invoice.objects.filter(company_from=request.GET.get("company_id")).aggregate(
-        Count('invoice_no'))
+
     card_data = {
         "total_inboxdata_amount": total_inboxdata_amount,
         "total_inboxdata_count": total_inboxdata_count,
-        "total_sendinboxdata_amount": total_sendinboxdata_amount,
-        "total_sendinboxdata_count": total_sendinboxdata_count
+
     }
-    if total_sales:
-        return Response({"status": "success", "data": total_sales, "card_data": card_data},
+    if total_inboxdata_count or total_inboxdata_amount:
+        return Response({"status": "success", "card_data": card_data},
                         status=status.HTTP_200_OK)
     else:
         return Response({"status": "error", "data": "No data found for dashboard"}, status=status.HTTP_400_BAD_REQUEST)
@@ -247,13 +266,52 @@ def Dashboard(request):
 
 @api_view(['GET'])
 def demo(request):
+    query = request.GET.get("query")
     some_day_last_week = timezone.now().date() - timedelta(days=7)
 
-    total_sales = Invoice.objects.filter(created_on__gte=some_day_last_week, ).values(
+    kwargs = {
+    }
+
+    if query == "company":
+        kwargs = {
+            '{0}__{1}'.format('company_from', "isnull"): False
+        }
+    elif query == "coustomer":
+        kwargs = {
+            '{0}__{1}'.format('company_from', "isnull"): True
+        }
+
+    sendboxdata = Invoice.objects.filter(company_to=request.GET.get("company_id"), **kwargs).select_related(
+        'company_from').order_by('-created_on')
+
+    total_sales = Invoice.objects.filter(created_on__gte=some_day_last_week,
+                                         company_to=request.GET.get("company_id"), **kwargs).values(
         'created_on__date'
     ).annotate(
         created_date_count=Count('created_on__date')
     ).annotate(
         day_collection=Sum('total')
-    )
-    return Response({"status": "success", "data": total_sales}, status=status.HTTP_200_OK)
+    ).order_by('-created_on__date')
+
+    total_sendinboxdata_amount = Invoice.objects.filter(company_to=request.GET.get("company_id"), **kwargs).aggregate(
+        Sum('total'))
+
+    total_sendinboxdata_count = Invoice.objects.filter(company_to=request.GET.get("company_id"), **kwargs).aggregate(
+        Count('invoice_no'))
+
+    serialized_sendbox = NewInvoiceItemsSerializer(sendboxdata, many=True)
+
+    card_data = {
+        "total_sales": total_sales,
+        "total_sendinboxdata_amount": total_sendinboxdata_amount,
+        "total_sendinboxdata_count": total_sendinboxdata_count
+    }
+
+    if serialized_sendbox.data:
+        return Response(
+            {"status": "success", "sendboxdata": serialized_sendbox.data, "card_data": card_data},
+            status=status.HTTP_200_OK)
+    else:
+        return Response(
+            {"status": "error", "data": "No any bill found"},
+            status=status.HTTP_200_OK)

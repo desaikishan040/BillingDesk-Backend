@@ -29,7 +29,7 @@ PAYMENT_CHOICES = (
 
 class Expanse(models.Model):
     ex_description = models.CharField(max_length=5000, blank=False)
-    profit_amount = models.IntegerField(blank=False, null=False)
+    amount = models.IntegerField(blank=False, null=False)
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     company = models.ForeignKey(Company, on_delete=models.CASCADE)
     created_on = models.DateTimeField(auto_now_add=True)
