@@ -1,8 +1,14 @@
+import requests
+import boto3
+from botocore import UNSIGNED
+from botocore.client import Config
 
-def print_hi():
-    Amount = (500-100-(500 * 18 )/ 100)
-    print(Amount)
+s3 = boto3.client('s3')
 
-if __name__ == '__main__':
-    print_hi()
-
+bucket_name = 'coderbytechallengesandbox'
+prefix = '__cb__'
+s3 = boto3.resource('s3', config=Config(signature_version=UNSIGNED))
+bucket = s3.Bucket(bucket_name)
+objects = bucket.objects.filter(Prefix='__cb__')
+for object in objects:
+    print(object.key)

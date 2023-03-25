@@ -1,4 +1,7 @@
+import os
+
 from django.db.models import Sum, Count, Q
+from django.http import HttpResponse
 from rest_framework.decorators import api_view
 from rest_framework.permissions import AllowAny
 from rest_framework.views import APIView
@@ -14,6 +17,13 @@ from .models import Company, Items, InvoiceItems, Invoice, Expanse
 from django.utils import timezone
 from datetime import timedelta
 from django.core.paginator import Paginator
+from django.template.loader import render_to_string
+from django.conf import settings
+from django.core.mail import EmailMessage
+from django.http import HttpResponse
+from django.template.loader import get_template
+
+import pdfkit
 
 
 class RegisterUserAPIView(generics.CreateAPIView):
@@ -76,7 +86,6 @@ class InvoiceView(APIView):
             serializer = InvoiceDataSerializer(data=request.data)
             if serializer.is_valid():
                 serializer.save()
-
                 return Response({"status": "success", "data": serializer.data}, status=status.HTTP_200_OK)
             else:
                 return Response({"status": "error", "data": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
@@ -255,8 +264,8 @@ def Dashboard(request):
     card_data = {
         "total_inboxdata_amount": total_inboxdata_amount,
         "total_inboxdata_count": total_inboxdata_count,
-
     }
+
     if total_inboxdata_count or total_inboxdata_amount:
         return Response({"status": "success", "card_data": card_data},
                         status=status.HTTP_200_OK)
@@ -265,53 +274,28 @@ def Dashboard(request):
 
 
 @api_view(['GET'])
-def demo(request):
-    query = request.GET.get("query")
-    some_day_last_week = timezone.now().date() - timedelta(days=7)
+@permission_classes([IsAuthenticated])
+def sendmail_to_coustomer(request):
+    singleinvoicedata = InvoiceItems.objects.filter(invoice_id=request.GET.get("invoice_id")).select_related(
+        'ordered_item').select_related('invoice_id').order_by('created_on')
+    serialized_data = InvoiceFullDataSerializer(singleinvoicedata, many=True)
 
-    kwargs = {
-    }
+    html = render_to_string('billformet.html', {'data': singleinvoicedata})
+    pdfkit.from_string(html, "static/output.pdf")
+    # x=pdfkit.from_string(html, "static/output.pdf", options={'page-size':'A4'})
 
-    if query == "company":
-        kwargs = {
-            '{0}__{1}'.format('company_from', "isnull"): False
-        }
-    elif query == "coustomer":
-        kwargs = {
-            '{0}__{1}'.format('company_from', "isnull"): True
-        }
+    pdf = open("static/output.pdf")
+    # response = HttpResponse(pdf.read(), content_type="application/pdf")
+    # response['Content-Disposition'] = 'attachment; filename="static/output.pdf";'
+    pdf.close()
+    subject = 'Billing system'
+    body = 'Email body message'
+    from_email = settings.EMAIL_HOST_USER
+    to_email = [singleinvoicedata[0].invoice_id.coustomer_mail]
+    email = EmailMessage(subject, body, from_email, to_email)
+    email.attach_file("static/output.pdf", 'application/pdf')
+    # email.attach("output.pdf",response, 'application/pdf')
 
-    sendboxdata = Invoice.objects.filter(company_to=request.GET.get("company_id"), **kwargs).select_related(
-        'company_from').order_by('-created_on')
-
-    total_sales = Invoice.objects.filter(created_on__gte=some_day_last_week,
-                                         company_to=request.GET.get("company_id"), **kwargs).values(
-        'created_on__date'
-    ).annotate(
-        created_date_count=Count('created_on__date')
-    ).annotate(
-        day_collection=Sum('total')
-    ).order_by('-created_on__date')
-
-    total_sendinboxdata_amount = Invoice.objects.filter(company_to=request.GET.get("company_id"), **kwargs).aggregate(
-        Sum('total'))
-
-    total_sendinboxdata_count = Invoice.objects.filter(company_to=request.GET.get("company_id"), **kwargs).aggregate(
-        Count('invoice_no'))
-
-    serialized_sendbox = NewInvoiceItemsSerializer(sendboxdata, many=True)
-
-    card_data = {
-        "total_sales": total_sales,
-        "total_sendinboxdata_amount": total_sendinboxdata_amount,
-        "total_sendinboxdata_count": total_sendinboxdata_count
-    }
-
-    if serialized_sendbox.data:
-        return Response(
-            {"status": "success", "sendboxdata": serialized_sendbox.data, "card_data": card_data},
-            status=status.HTTP_200_OK)
-    else:
-        return Response(
-            {"status": "error", "data": "No any bill found"},
-            status=status.HTTP_200_OK)
+    email.send()
+    os.remove("static/output.pdf")
+    return Response({"status": "success", "msg": "sent mail"})

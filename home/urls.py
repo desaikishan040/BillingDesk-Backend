@@ -28,6 +28,6 @@ urlpatterns = [
     # dashboard
     path('dashboard-data', views.Dashboard, name="dashboard-data"),
     # demo
-    path('demo', views.demo, name="demo"),
+    path('sendmail', views.sendmail_to_coustomer, name="sendmail"),
 
 ]

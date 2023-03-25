@@ -1,0 +1,131 @@
+
+<div class="card">
+    {% for i in data %}
+    {% if forloop.first %}
+
+    <div class="card-body">
+        <div class="container mb-5 mt-3">
+            <div class="row d-flex align-items-baseline">
+                <div class="col-xl-9">
+                    <p style="color: #7e8d9f;font-size: 20px;">Invoice >> <strong>ID:
+                        #{{i.invoice_id.invoice_no}}</strong></p>
+                </div>
+
+                <hr>
+            </div>
+
+            <div style="padding-top">
+                <div class="col-md-12">
+                    <div style="text-align:center">
+                        <img
+                                src="data:image/jpeg;base64,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"
+                                class="shadow-2-strong"
+                                style=" max-width: 180px; height: auto "
+                                alt=""
+                        />
+                    </div>
+                    <div style="text-align:center">
+                        <p class="pt-2" style=" font-size: 14px">
+                            {{i.invoice_id.company_to.company_mail}}
+                        </p>
+                    </div>
+                </div>
+
+                <div style="display: table;">
+                    <div style="display: table-cell;">
+                        <ul style=" list-style-type: none;">
+                            <li style="margin-top:5px">To: <span style="color:rgb(13 110 253) ;">{{i.invoice_id.customer_name}}</span>
+                            </li>
+                            <li style="margin-top:5px"><i class="fas fa-phone"></i> {{i.invoice_id.Phone_number}}</li>
+                            <li style="margin-top:5px"><i class="fas fa-envelope"></i> {{i.invoice_id.coustomer_mail}}
+                            </li>
+                        </ul>
+                    </div>
+                    <div style="display: table-cell;">
+                        <ul style=" list-style-type: none;">
+                            <li style="margin-top:5px">From: <span style="color:rgb(13 110 253) ;">{{i.invoice_id.company_to.company_name}}</span>
+                            </li>
+                            <li style="margin-top:5px">
+                                {{i.invoice_id.company_to.Company_address}},{{i.invoice_id.company_to.state}}
+                            </li>
+                            <li style="margin-top:5px">{{i.invoice_id.company_to.country}}</li>
+                            <li style="margin-top:5px"><i class="fas fa-phone"></i>
+                                {{i.invoice_id.company_to.Phone_number}}
+                            </li>
+                            <li style="margin-top:5px"><i class="fas fa-envelope"></i>
+                                {{i.invoice_id.company_to.company_mail}}
+                            </li>
+                        </ul>
+                    </div>
+                    <div style="display: table-cell; padding-left:20px">
+                        <p class="text-muted">Invoice</p>
+                        <ul class="list-unstyled">
+
+                            <li class="text-muted"><i class="fas fa-circle" style="color:rgb(13 110 253);"></i> <span
+                                    class="fw-bold">Creation Date: </span>{{i.created_on}}
+                            </li>
+
+                        </ul>
+                    </div>
+                </div>
+
+
+                <div class="row my-2 mx-1 justify-content-center">
+                    <table class="table table-striped table-borderless">
+                        <thead style="background-color: rgb(94, 162, 239);" class="text-white">
+                        <tr>
+                            <th scope="col">#</th>
+                            <th scope="col">Item</th>
+                            <th scope="col">Quantity</th>
+                            <th scope="col">GST</th>
+                            <th scope="col">MRP(GST included)</th>
+                            <th scope="col">MRP(GST included)</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        {% for i in data %}
+
+                        <tr>
+                            <th scope="row"> {{forloop.counter }}</th>
+                            <td>{{i.ordered_item.item_description}}</td>
+                            <td>{{i.quantity}}</td>
+                            <td>{{i.ordered_item.GST_percentage}}</td>
+                            <td>{{i.ordered_item.MRP_price_per_unit}}</td>
+                            <td>{% widthratio i.quantity 1 i.ordered_item.MRP_price_per_unit%}</td>
+
+                        </tr>
+                        {% endfor %}
+
+                        </tbody>
+
+                    </table>
+                </div>
+                <div class="row">
+
+                    <div class="col-xl-3">
+                        {% for i in data %}
+                        {% if forloop.first %}
+
+                        <p class="text-black float-start"><span
+                                class="text-black me-3"> Total Amount(with tax)</span><span
+                                style="font-size: 25px;">INR {{i.invoice_id.total}}</span></p>
+                        {% endif %}
+                        {% endfor %}
+
+                    </div>
+                </div>
+                <hr>
+                <div class="row">
+                    <div class="col-xl-10">
+                        <p>Thank you for your purchase</p>
+                    </div>
+
+                </div>
+
+            </div>
+        </div>
+    </div>
+{% endif %}
+
+                {% endfor %}
+</div>
