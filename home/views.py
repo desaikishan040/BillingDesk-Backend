@@ -22,8 +22,8 @@ from django.conf import settings
 from django.core.mail import EmailMessage
 from django.http import HttpResponse
 from django.template.loader import get_template
-
 import pdfkit
+from rest_framework_simplejwt.tokens import RefreshToken
 
 
 class RegisterUserAPIView(generics.CreateAPIView):
@@ -48,6 +48,16 @@ class CompanyView(APIView):
             return Response({"status": "success", "data": company}, status=status.HTTP_200_OK)
         else:
             return Response({"status": "error", "data": "Company not found"}, status=status.HTTP_200_OK)
+
+class BlacklistToken(APIView):
+    def post(self, request, *args, **kwargs):
+        Refresh_token = request.POST.get("refresh")
+        print("token--->", Refresh_token)
+        token = RefreshToken(Refresh_token)
+        print("tokenr--->", token)
+
+        token.blacklist()
+        return Response("Successful Logout", status=status.HTTP_200_OK)
 
 
 @permission_classes([IsAuthenticated])
