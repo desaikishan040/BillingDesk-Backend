@@ -1,4 +1,6 @@
-#!/home/kishan/Documents/GitHub/BillingDesk-Backend/venv/bin/python3
+#!/bin/sh
+'''exec' "/home/lcom/Downloads/Billing system/BillingDesk-Backend/venv/bin/python" "$0" "$@"
+' '''
 # -*- coding: utf-8 -*-
 import re
 import sys

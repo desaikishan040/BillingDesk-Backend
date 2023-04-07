@@ -44,6 +44,13 @@ class RegisterSerializer(serializers.ModelSerializer):
 
 
 class CompanyDataSerializer(serializers.ModelSerializer):
+    def validate(self, attrs):
+        if Company.objects.filter(GST_number=attrs["GST_number"]):
+            raise serializers.ValidationError(
+                {"GST_number": "GST number already exist"})
+     
+        return attrs
+
     class Meta:
         model = Company
         fields = '__all__'

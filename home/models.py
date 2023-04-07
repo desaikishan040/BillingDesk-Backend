@@ -4,6 +4,13 @@ from django.contrib.auth.models import User
 
 
 # Create your models here.
+class AuthorManager(models.Manager):
+    def current(self,userid):
+        return Company.objects.filter(user=userid)
+
+    pass
+
+
 class Company(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="company_owner")
     company_name = models.CharField(max_length=150, null=True, blank=True)
@@ -16,6 +23,7 @@ class Company(models.Model):
     Company_address = models.TextField(max_length=500, null=True, blank=True)
     created_on = models.DateTimeField(auto_now_add=True)
     profile_image = models.ImageField(upload_to='images/', null=True, blank=True)
+    objects = AuthorManager()
 
 
 PAYMENT_CHOICES = (
@@ -60,7 +68,7 @@ class Invoice(models.Model):
 
 
 class Items(models.Model):
-    created_by_user = models.ForeignKey(User, on_delete=models.CASCADE)
+    created_by_user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='item_creator')
     created_by_company = models.ForeignKey(Company, on_delete=models.CASCADE)
     item_description = models.TextField(max_length=500, null=True, blank=True)
     MRP_price_per_unit = models.IntegerField(blank=False, null=False)

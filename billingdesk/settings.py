@@ -38,14 +38,14 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    'home',
-    'websocket',
     'corsheaders',
     'rest_framework',
     'rest_framework.authtoken',
     'rest_framework_simplejwt',
     'rest_framework_simplejwt.token_blacklist',
 
+    'home',
+    'websocket',
 
 ]
 
@@ -57,8 +57,8 @@ CHANNEL_LAYERS = {
     }
 }
 
-
 REST_FRAMEWORK = {
+
     'DEFAULT_AUTHENTICATION_CLASSES': (
         'rest_framework_simplejwt.authentication.JWTAuthentication',
     ),
@@ -106,15 +106,17 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'home.middleware.IPAuthenticationMiddleware'
 ]
 CSRF_TRUSTED_ORIGINS = ['http://127.0.0.1:8000', 'http://localhost:3000']
 
 CORS_ORIGIN_ALLOW_ALL = False
+
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:3000",
-    "http://localhost:3001",
     'http://127.0.0.1:8000',
 ]
+
 ROOT_URLCONF = 'billingdesk.urls'
 
 TEMPLATES = [
@@ -154,6 +156,7 @@ DATABASES = {
         'PORT': '5432'
     }
 }
+SMS_BACKEND = 'sms.backends.console.SmsBackend'
 
 # Password validation
 # https://docs.djangoproject.com/en/4.1/ref/settings/#auth-password-validators
@@ -188,7 +191,7 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/4.1/howto/static-files/
 
 STATIC_URL = 'static/'
-STATICFILES_DIRS=(BASE_DIR/'static',)
+STATICFILES_DIRS = (BASE_DIR / 'static',)
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
 # Default primary key field type

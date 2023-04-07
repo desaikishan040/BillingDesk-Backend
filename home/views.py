@@ -2,6 +2,7 @@ import os
 
 from django.db.models import Sum, Count, Q
 from django.http import HttpResponse
+from django.shortcuts import get_object_or_404
 from rest_framework.decorators import api_view
 from rest_framework.permissions import AllowAny
 from rest_framework.views import APIView
@@ -34,6 +35,7 @@ class RegisterUserAPIView(generics.CreateAPIView):
 @permission_classes([IsAuthenticated])
 class CompanyView(APIView):
     def post(self, request, *args, **kwargs):
+        request.data._mutable = True
         request.data['user'] = request.user.id
         serializer = CompanyDataSerializer(data=request.data)
         if serializer.is_valid():
@@ -43,11 +45,12 @@ class CompanyView(APIView):
             return Response({"status": "error", "data": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
 
     def get(self, request, *args, **kwargs):
-        company = Company.objects.filter(user=request.user.id).values()
+        company = Company.objects.current(request.user.id).values()
         if company:
             return Response({"status": "success", "data": company}, status=status.HTTP_200_OK)
         else:
             return Response({"status": "error", "data": "Company not found"}, status=status.HTTP_200_OK)
+
 
 class BlacklistToken(APIView):
     def post(self, request, *args, **kwargs):
@@ -309,3 +312,12 @@ def sendmail_to_coustomer(request):
     email.send()
     os.remove("static/output.pdf")
     return Response({"status": "success", "msg": "sent mail"})
+
+
+class Demo(APIView):
+
+    def get(self, request, *args, **kwargs):
+        sendboxdata = Invoice.objects.filter(company_to=28, company_from__isnull=False).values('company_from').annotate(
+           Count('invoice_no'))
+
+        return Response({"status": sendboxdata})
