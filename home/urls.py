@@ -30,6 +30,7 @@ urlpatterns = [
     path('dashboard-data', views.Dashboard, name="dashboard-data"),
     # demo
     path('sendmail', views.sendmail_to_coustomer, name="sendmail"),
+    path('download-invoice', views.DownloadInvoice, name="downloadinvoice"),
     path('demo/', views.Demo.as_view(), name="sendmail"),
 
 ]

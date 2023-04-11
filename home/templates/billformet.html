@@ -1,3 +1,10 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Page Title</title>
+
+</head>
+<body>
 
 <div class="card">
     {% for i in data %}
@@ -9,6 +16,8 @@
                 <div class="col-xl-9">
                     <p style="color: #7e8d9f;font-size: 20px;">Invoice >> <strong>ID:
                         #{{i.invoice_id.invoice_no}}</strong></p>
+                    <div id="demo"></div>
+
                 </div>
 
                 <hr>
@@ -33,6 +42,7 @@
 
                 <div style="display: table;">
                     <div style="display: table-cell;">
+                        {% if i.invoice_id.customer_name %}
                         <ul style=" list-style-type: none;">
                             <li style="margin-top:5px">To: <span style="color:rgb(13 110 253) ;">{{i.invoice_id.customer_name}}</span>
                             </li>
@@ -40,6 +50,20 @@
                             <li style="margin-top:5px"><i class="fas fa-envelope"></i> {{i.invoice_id.coustomer_mail}}
                             </li>
                         </ul>
+                        {% else %}
+
+                        <ul style=" list-style-type: none;">
+                            <li style="margin-top:5px">To: <span style="color:rgb(13 110 253) ;">{{i.invoice_id.company_from.company_name}}</span>
+                            </li>
+                            <li style="margin-top:5px">{{i.invoice_id.company_from.Company_address}}</li>
+                            <li style="margin-top:5px"><i class="fas fa-phone"></i>
+                                {{i.invoice_id.company_from.Phone_number}}
+                            <li style="margin-top:5px"><i class="fas fa-envelope"></i>
+                                {{i.invoice_id.company_from.company_mail}}
+                            </li>
+                        </ul>
+                        {% endif %}
+
                     </div>
                     <div style="display: table-cell;">
                         <ul style=" list-style-type: none;">
@@ -125,7 +149,10 @@
             </div>
         </div>
     </div>
-{% endif %}
+    {% endif %}
 
-                {% endfor %}
+    {% endfor %}
+
 </div>
+</body>
+</html>

@@ -166,8 +166,19 @@ def Getallcompany(request):
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def Getinboxbill(request):
-    inboxdata = Invoice.objects.filter(company_from=request.GET.get("company_id")).select_related(
-        'company_from').order_by('-created_on')
+    query = request.GET.get('query')
+
+    if query:
+        # inboxdata = Invoice.objects.filter(Q(company_from=request.GET.get("company_id")) &
+        #                                    (Q(invoice_no__icontains=query))).select_related(
+        #     'company_from').order_by('-created_on')
+        inboxdata = Invoice.objects.filter(
+            (Q(invoice_no__icontains=query) | Q(company_to__company_name__icontains=query)),
+            company_from=request.GET.get("company_id")).select_related(
+            'company_from').order_by('-created_on')
+    else:
+        inboxdata = Invoice.objects.filter(company_from=request.GET.get("company_id")).select_related(
+            'company_from').order_by('-created_on')
 
     paginator = Paginator(inboxdata, 10)
     page_number = request.GET.get('page')
@@ -188,6 +199,7 @@ def Getinboxbill(request):
 @permission_classes([IsAuthenticated])
 def Getsendboxbill(request):
     query = request.GET.get("query")
+    searchquery = request.GET.get("searchquery")
     some_day_last_week = timezone.now().date() - timedelta(days=7)
 
     kwargs = {
@@ -201,9 +213,20 @@ def Getsendboxbill(request):
         kwargs = {
             '{0}__{1}'.format('company_from', "isnull"): True
         }
-
-    sendboxdata = Invoice.objects.filter(company_to=request.GET.get("company_id"), **kwargs).select_related(
-        'company_from').order_by('-created_on')
+    if searchquery:
+        inboxdata = Invoice.objects.filter(
+            (Q(invoice_no__icontains=query) | Q(company_to__company_name__icontains=query)),
+            company_from=request.GET.get("company_id")).select_related(
+            'company_from').order_by('-created_on')
+        sendboxdata = Invoice.objects.filter((Q(invoice_no__icontains=searchquery) | Q(
+            company_from__company_name__icontains=searchquery) | Q(customer_name__icontains=searchquery)),
+                                             company_to=request.GET.get("company_id"),
+                                             **kwargs, ).select_related(
+            'company_from').order_by('-created_on')
+    else:
+        sendboxdata = Invoice.objects.filter(company_to=request.GET.get("company_id"),
+                                             **kwargs, ).select_related(
+            'company_from').order_by('-created_on')
 
     total_sales = Invoice.objects.filter(created_on__gte=some_day_last_week,
                                          company_to=request.GET.get("company_id"), **kwargs).values(
@@ -220,7 +243,14 @@ def Getsendboxbill(request):
     total_sendinboxdata_count = Invoice.objects.filter(company_to=request.GET.get("company_id"), **kwargs).aggregate(
         Count('invoice_no'))
 
-    serialized_sendbox = NewInvoiceItemsSerializer(sendboxdata, many=True)
+    paginator = Paginator(sendboxdata, 10)
+    page_number = request.GET.get('page')
+    if page_number is None:
+        page_number = 1
+    data = paginator.get_page(page_number)
+    serialized_sendbox = NewInvoiceItemsSerializer(data, many=True)
+
+    totalnumpages = data.paginator.num_pages
 
     card_data = {
         "total_sales": total_sales,
@@ -230,7 +260,8 @@ def Getsendboxbill(request):
 
     if serialized_sendbox.data:
         return Response(
-            {"status": "success", "sendboxdata": serialized_sendbox.data, "card_data": card_data, "report_type": query},
+            {"status": "success", "sendboxdata": serialized_sendbox.data, "card_data": card_data, "report_type": query,
+             "totalnumpages": totalnumpages},
             status=status.HTTP_200_OK)
     else:
         return Response(
@@ -314,10 +345,50 @@ def sendmail_to_coustomer(request):
     return Response({"status": "success", "msg": "sent mail"})
 
 
+@api_view(['GET'])
+def DownloadInvoice(request):
+
+    singleinvoicedata = InvoiceItems.objects.filter(invoice_id=request.GET.get("invoice_id")).select_related(
+        'ordered_item').select_related('invoice_id').order_by('created_on')
+    serialized_data = InvoiceFullDataSerializer(singleinvoicedata, many=True)
+    html = render_to_string('billformet.html', {'data': singleinvoicedata})
+    x =  pdfkit.from_string(html, False)
+
+    response = HttpResponse(x, content_type="application/pdf")
+    response['Content-Disposition'] = 'attachment; filename="static/output.pdf";'
+
+    return response
+
+
 class Demo(APIView):
 
     def get(self, request, *args, **kwargs):
-        sendboxdata = Invoice.objects.filter(company_to=28, company_from__isnull=False).values('company_from').annotate(
-           Count('invoice_no'))
+        # sendboxdata = Invoice.objects.filter(company_to=28, company_from__isnull=False).values('company_from').annotate(
+        #     Count('invoice_no'))
+        #
+        # return Response({"status": sendboxdata})
+        query = request.GET.get('query')
 
-        return Response({"status": sendboxdata})
+        if query:
+            inboxdata = Invoice.objects.filter(
+                (Q(invoice_no__icontains=query) | Q(company_to__company_name__icontains=query)),
+                company_from=request.GET.get("company_id")).select_related(
+                'company_from').order_by('-created_on')
+            print("data--------->", inboxdata)
+        else:
+            inboxdata = Invoice.objects.filter(company_from=request.GET.get("company_id")).select_related(
+                'company_from').order_by('-created_on')
+
+        paginator = Paginator(inboxdata, 10)
+        page_number = request.GET.get('page')
+        if page_number is None:
+            page_number = 1
+        data = paginator.get_page(page_number)
+        serialized_inbox = NewInvoiceItemsSerializer(data, many=True)
+        totalnumpages = data.paginator.num_pages
+        if serialized_inbox.data:
+            return Response(
+                {"status": "success", "totalnumpages": totalnumpages, "inboxdata": serialized_inbox.data},
+                status=status.HTTP_200_OK)
+        else:
+            return Response({"status": "error", "data": "No any bill found"}, status=status.HTTP_200_OK)
