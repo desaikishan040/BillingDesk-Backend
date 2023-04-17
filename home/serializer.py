@@ -4,7 +4,7 @@ from rest_framework import serializers
 from django.contrib.auth.models import User
 from rest_framework.validators import UniqueValidator
 from django.contrib.auth.password_validation import validate_password
-from .models import Company, Invoice, Items, InvoiceItems, Expanse
+from .models import Company, Invoice, Items, InvoiceItems, Expanse, ItemOtherfield
 
 
 class RegisterSerializer(serializers.ModelSerializer):
@@ -48,7 +48,7 @@ class CompanyDataSerializer(serializers.ModelSerializer):
         if Company.objects.filter(GST_number=attrs["GST_number"]):
             raise serializers.ValidationError(
                 {"GST_number": "GST number already exist"})
-     
+
         return attrs
 
     class Meta:
@@ -95,4 +95,25 @@ class InvoiceFullDataSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = InvoiceItems
+        fields = '__all__'
+
+
+class ItemOtherfieldSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ItemOtherfield
+        fields = '__all__'
+
+
+class NestedItemsSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = Items
+        fields = '__all__'
+
+
+class NewItemsSerializer(serializers.ModelSerializer):
+    # parent_item = ItemOtherfieldSerializer(many=True)
+
+    class Meta:
+        model = Items
         fields = '__all__'

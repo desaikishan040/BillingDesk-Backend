@@ -2,6 +2,21 @@ from datetime import datetime
 from django.db import models
 from django.contrib.auth.models import User
 
+PAYMENT_CHOICES = (
+    ('online', 'ONLINE'),
+    ('cash', 'CASH'),
+    ('check', 'CHECK'),
+    ('upi', 'UPI'),
+    ('card', 'CARD'),
+)
+
+Field_CHOICES = (
+    ('number', 'NUMBER'),
+    ('text', 'TEXT'),
+    ('checkbox', 'CHECKBOX')
+
+)
+
 
 # Create your models here.
 class AuthorManager(models.Manager):
@@ -24,15 +39,6 @@ class Company(models.Model):
     created_on = models.DateTimeField(auto_now_add=True)
     profile_image = models.ImageField(upload_to='images/', null=True, blank=True)
     objects = AuthorManager()
-
-
-PAYMENT_CHOICES = (
-    ('online', 'ONLINE'),
-    ('cash', 'CASH'),
-    ('check', 'CHECK'),
-    ('upi', 'UPI'),
-    ('card', 'CARD'),
-)
 
 
 class Expanse(models.Model):
@@ -68,7 +74,7 @@ class Invoice(models.Model):
 
 
 class Items(models.Model):
-    created_by_user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='item_creator')
+    created_by_user = models.ForeignKey(User, on_delete=models.CASCADE)
     created_by_company = models.ForeignKey(Company, on_delete=models.CASCADE)
     item_description = models.TextField(max_length=500, null=True, blank=True)
     MRP_price_per_unit = models.IntegerField(blank=False, null=False)
@@ -82,6 +88,13 @@ class Items(models.Model):
         self.profit_amount = (self.MRP_price_per_unit - self.purchase_price - (
                 self.MRP_price_per_unit * self.GST_percentage) / 100)
         super(Items, self).save(*args, **kwargs)
+
+
+class ItemOtherfield(models.Model):
+    parent_item = models.ForeignKey(Items, on_delete=models.CASCADE, related_name="parent_item")
+    field_type = models.CharField(max_length=10, choices=Field_CHOICES, default='text')
+    field_name = models.TextField(max_length=50, null=False, blank=False)
+    field_value = models.TextField(max_length=500, null=True, blank=True)
 
 
 class InvoiceItems(models.Model):

@@ -4,6 +4,7 @@ from rest_framework_simplejwt.views import (
     TokenObtainPairView,
     TokenRefreshView, TokenVerifyView)
 
+
 urlpatterns = [
     # user
     path('register', views.RegisterUserAPIView.as_view(), name="register"),
@@ -25,12 +26,13 @@ urlpatterns = [
     path('getsendboxbill', views.Getsendboxbill, name="getsendboxbill"),
     # update
     path('update-item', views.UpdateItem, name="update-item"),
+    path('update-item-new', views.UpdateItemNew.as_view(), name="update-item-new"),
     path('update-company', views.UpdateCompany, name="update-company"),
     # dashboard
     path('dashboard-data', views.Dashboard, name="dashboard-data"),
     # demo
     path('sendmail', views.sendmail_to_coustomer, name="sendmail"),
     path('download-invoice', views.DownloadInvoice, name="downloadinvoice"),
-    path('demo/', views.Demo.as_view(), name="sendmail"),
-
+    path('add-item-new', views.NewItemView.as_view(), name="demo"),
+    # path('demo', views.Demo.as_view(), name="demo"),
 ]
