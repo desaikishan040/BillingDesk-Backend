@@ -5,13 +5,11 @@ from django.contrib.auth.models import User
 from rest_framework.validators import UniqueValidator
 from django.contrib.auth.password_validation import validate_password
 from .models import Company, Invoice, Items, InvoiceItems, Expanse, ItemOtherfield
-
+import requests
+import json
 
 class RegisterSerializer(serializers.ModelSerializer):
-    email = serializers.EmailField(
-        required=True,
-        validators=[UniqueValidator(queryset=User.objects.all())]
-    )
+
     password = serializers.CharField(
         write_only=True, required=True, validators=[validate_password])
     password2 = serializers.CharField(write_only=True, required=True)
@@ -45,6 +43,20 @@ class RegisterSerializer(serializers.ModelSerializer):
 
 class CompanyDataSerializer(serializers.ModelSerializer):
     def validate(self, attrs):
+        url = "https://685auq57s5.execute-api.ap-south-1.amazonaws.com/Prod/api/GSTINBulk/verify"
+
+        payload = json.dumps([
+            attrs["GST_number"]
+        ])
+        headers = {
+            'Content-Type': 'application/json'
+        }
+
+        response = requests.request("POST", url, headers=headers, data=payload)
+
+        if json.loads(response.text)[0]["gst_id"] != 0:
+            raise serializers.ValidationError(
+                {"GST_number": "GST number not valid"})
         if Company.objects.filter(GST_number=attrs["GST_number"]):
             raise serializers.ValidationError(
                 {"GST_number": "GST number already exist"})
