@@ -8,8 +8,8 @@ from .models import Company, Invoice, Items, InvoiceItems, Expanse, ItemOtherfie
 import requests
 import json
 
-class RegisterSerializer(serializers.ModelSerializer):
 
+class RegisterSerializer(serializers.ModelSerializer):
     password = serializers.CharField(
         write_only=True, required=True, validators=[validate_password])
     password2 = serializers.CharField(write_only=True, required=True)
@@ -57,7 +57,8 @@ class CompanyDataSerializer(serializers.ModelSerializer):
         if json.loads(response.text)[0]["gst_id"] != 0:
             raise serializers.ValidationError(
                 {"GST_number": "GST number not valid"})
-        if Company.objects.filter(GST_number=attrs["GST_number"]):
+
+        if Company.objects.filter(GST_number=attrs["GST_number"]) and attrs["user"] == None:
             raise serializers.ValidationError(
                 {"GST_number": "GST number already exist"})
 
@@ -117,7 +118,6 @@ class ItemOtherfieldSerializer(serializers.ModelSerializer):
 
 
 class NestedItemsSerializer(serializers.ModelSerializer):
-
     class Meta:
         model = Items
         fields = '__all__'

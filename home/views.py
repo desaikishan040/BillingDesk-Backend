@@ -10,7 +10,7 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from .serializer import RegisterSerializer, CompanyDataSerializer, InvoiceDataSerializer, \
     ItemsSerializer, InvoiceItemsSerializer, NewInvoiceItemsSerializer, InvoiceFullDataSerializer, \
-    ExpanseDataSerializer, NestedItemsSerializer, NewItemsSerializer,ItemOtherfieldSerializer
+    ExpanseDataSerializer, NestedItemsSerializer, NewItemsSerializer, ItemOtherfieldSerializer
 from rest_framework import generics
 from rest_framework.authtoken.models import Token
 from rest_framework import status
@@ -213,10 +213,7 @@ def Getsendboxbill(request):
             '{0}__{1}'.format('company_from', "isnull"): True
         }
     if searchquery:
-        # inboxdata = Invoice.objects.filter(
-        #     (Q(invoice_no__icontains=query) | Q(company_to__company_name__icontains=query)),
-        #     company_from=request.GET.get("company_id")).select_related(
-        #     'company_from').order_by('-created_on')
+
         sendboxdata = Invoice.objects.filter((Q(invoice_no__icontains=searchquery) | Q(
             company_from__company_name__icontains=searchquery) | Q(customer_name__icontains=searchquery)),
                                              company_to=request.GET.get("company_id"),
@@ -268,6 +265,83 @@ def Getsendboxbill(request):
             status=status.HTTP_200_OK)
 
 
+@permission_classes([IsAuthenticated])
+class NewItemView(APIView):
+    def get(self, request, *args, **kwargs):
+        item = Items.objects.filter(id=request.GET.get("item_id")).values()
+        if item:
+            items = Items.objects.prefetch_related('parent_item').get(id=request.GET.get("item_id"))
+            return Response({"status": "success", "otherfields": items.parent_item.all().values(), "itemdata": item},
+                            status=status.HTTP_200_OK)
+        else:
+            return Response({"status": "error", "data": "item not found"},
+                            status=status.HTTP_400_BAD_REQUEST00_OK)
+
+    def post(self, request, *args, **kwargs):
+        request.data._mutable = True
+        company = Company.objects.filter(user=request.user.id, id=request.data["created_by_company"])
+        if company:
+            parent_item = json.loads(request.data["parent_item"])
+            request.data['created_by_user'] = request.user.id
+            serializer = NestedItemsSerializer(data=request.data)
+
+            if serializer.is_valid():
+                post = serializer.save()
+                if parent_item:
+                    for items in parent_item:
+                        ItemOtherfield.objects.create(parent_item=post, field_value=items["field_value"],
+                                                      field_name=items["field_name"],
+                                                      field_type=items["field_type"])
+
+                return Response({"status": "success", "data": serializer.data}, status=status.HTTP_200_OK)
+            else:
+
+                return Response({"status": "error", "data": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
+        else:
+            return Response({"status": "error", "data": "Invalid Company."}, status=status.HTTP_200_OK)
+
+
+@permission_classes([IsAuthenticated])
+class UpdateItemNew(generics.UpdateAPIView):
+    queryset = Items.objects.all()
+    serializer_class = NewItemsSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_object(self):
+        return Items.objects.get(id=self.request.data['id'])
+
+    def put(self, request, *args, **kwargs):
+        request.data._mutable = True
+        parent_item = json.loads(request.data["parent_item"])
+        request.data['created_by_user'] = request.user.id
+        instance = self.get_object()
+        serializer = self.get_serializer(instance, data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            if parent_item:
+                for items in parent_item:
+                    if type(items["field_id"]) is int and items["field_id"]:
+                        items["parent_item"] = request.data['id']
+                        otherfield_instance = ItemOtherfield.objects.get(id=items['field_id'])
+
+                        serializer_otherfield = ItemOtherfieldSerializer(otherfield_instance, data=items)
+                        if serializer_otherfield.is_valid():
+                            serializer_otherfield.save()
+                        else:
+                            return Response({"message": serializer_otherfield.errors},
+                                            status=status.HTTP_400_BAD_REQUEST)
+                    else:
+
+                        ItemOtherfield.objects.create(parent_item=instance, field_value=items["field_value"],
+                                                      field_name=items["field_name"],
+                                                      field_type=items["field_type"])
+                        return Response({"message": "data updated"}, status=status.HTTP_200_OK)
+            return Response({"message": serializer.data}, status=status.HTTP_200_OK)
+
+        else:
+            return Response({"message": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
+
+
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
 def UpdateItem(request):
@@ -289,6 +363,8 @@ def UpdateCompany(request):
 
     request.data['user'] = request.user.id
     companydata = Company.objects.get(id=request.data["id"], user=request.user.id)
+    if not request.data['profile_image']:
+        request.data['profile_image'] = companydata.profile_image
     serializer = CompanyDataSerializer(companydata, data=request.data)
     if serializer.is_valid():
         serializer.save()
@@ -303,10 +379,16 @@ def Dashboard(request):
     total_inboxdata_amount = Invoice.objects.filter(company_from=request.GET.get("company_id")).aggregate(Sum('total'))
     total_inboxdata_count = Invoice.objects.filter(company_from=request.GET.get("company_id")).aggregate(
         Count('invoice_no'))
+    total_expansedata_amount = Expanse.objects.filter(company=request.GET.get("company_id")).aggregate(Sum('amount'))
+    total_expansedata_count = Expanse.objects.filter(company=request.GET.get("company_id")).aggregate(
+        Count('id'))
 
     card_data = {
         "total_inboxdata_amount": total_inboxdata_amount,
         "total_inboxdata_count": total_inboxdata_count,
+        "total_expansedata_count": total_expansedata_count,
+        "total_expansedata_amount": total_expansedata_amount,
+
     }
 
     if total_inboxdata_count or total_inboxdata_amount:
@@ -356,80 +438,3 @@ def DownloadInvoice(request):
     response['Content-Disposition'] = 'attachment; filename="static/output.pdf";'
 
     return response
-
-
-@permission_classes([IsAuthenticated])
-class NewItemView(APIView):
-    def get(self, request, *args, **kwargs):
-        item = Items.objects.filter(id=request.GET.get("item_id")).values()
-        if item:
-            items = Items.objects.prefetch_related('parent_item').get(id=request.GET.get("item_id"))
-            return Response({"status": "success", "otherfields": items.parent_item.all().values(), "itemdata": item},
-                            status=status.HTTP_200_OK)
-        else:
-            return Response({"status": "error", "data": "item not found"},
-                            status=status.HTTP_400_BAD_REQUEST00_OK)
-
-    def post(self, request, *args, **kwargs):
-        request.data._mutable = True
-        company = Company.objects.filter(user=request.user.id, id=request.data["created_by_company"])
-        if company:
-            parent_item = json.loads(request.data["parent_item"])
-            request.data['created_by_user'] = request.user.id
-            serializer = NestedItemsSerializer(data=request.data)
-
-            if serializer.is_valid():
-                post = serializer.save()
-                if parent_item:
-                    for items in parent_item:
-                        ItemOtherfield.objects.create(parent_item=post, field_value=items["field_value"],
-                                                      field_name=items["field_name"],
-                                                      field_type=items["field_type"])
-
-                return Response({"status": "success", "data": serializer.data}, status=status.HTTP_200_OK)
-            else:
-
-                return Response({"status": "error", "data": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
-        else:
-            return Response({"status": "error", "data": "Invalid Company."}, status=status.HTTP_200_OK)
-
-
-@permission_classes([IsAuthenticated])
-class UpdateItemNew(generics.UpdateAPIView):
-
-    queryset = Items.objects.all()
-    serializer_class = NewItemsSerializer
-    permission_classes = [IsAuthenticated]
-
-    def get_object(self):
-        return Items.objects.get(id=self.request.data['id'])
-
-    def put(self, request, *args, **kwargs):
-        request.data._mutable = True
-        parent_item = json.loads(request.data["parent_item"])
-        request.data['created_by_user'] = request.user.id
-        instance = self.get_object()
-        serializer = self.get_serializer(instance, data=request.data)
-        if serializer.is_valid():
-            serializer.save()
-            if parent_item:
-                for items in parent_item:
-                    if type(items["field_id"]) is int and items["field_id"]:
-                        items["parent_item"] = request.data['id']
-                        otherfield_instance = ItemOtherfield.objects.get(id=items['field_id'])
-
-                        serializer_otherfield = ItemOtherfieldSerializer(otherfield_instance, data=items)
-                        if serializer_otherfield.is_valid():
-                            serializer_otherfield.save()
-                        else:
-                            return Response({"message": serializer_otherfield.errors}, status=status.HTTP_400_BAD_REQUEST)
-                    else:
-
-                        ItemOtherfield.objects.create(parent_item=instance, field_value=items["field_value"],
-                                                      field_name=items["field_name"],
-                                                      field_type=items["field_type"])
-                        return Response({"message":"data updated" }, status=status.HTTP_200_OK)
-            return Response({"message": serializer.data}, status=status.HTTP_200_OK)
-
-        else:
-            return Response({"message": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
