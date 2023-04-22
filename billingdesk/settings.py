@@ -23,12 +23,10 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = 'django-insecure-6=$o0!&#dpv_*nufx_2+ek9s8*%lh0+7#kfoj52m@2%m)h)rcb'
 
-# SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
 ALLOWED_HOSTS = ['*']
 
-# Application definition
 
 INSTALLED_APPS = [
     'daphne',
@@ -46,7 +44,6 @@ INSTALLED_APPS = [
 
     'home',
     'websocket',
-
 ]
 
 ASGI_APPLICATION = 'billingdesk.asgi.application'
@@ -58,7 +55,9 @@ CHANNEL_LAYERS = {
 }
 
 REST_FRAMEWORK = {
-
+    # 'DEFAULT_RENDERER_CLASSES': (
+    #     'rest_framework.renderers.JSONRenderer',
+    # ),
     'DEFAULT_AUTHENTICATION_CLASSES': (
         'rest_framework_simplejwt.authentication.JWTAuthentication',
     ),

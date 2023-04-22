@@ -10,13 +10,13 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from .serializer import RegisterSerializer, CompanyDataSerializer, InvoiceDataSerializer, \
     ItemsSerializer, InvoiceItemsSerializer, NewInvoiceItemsSerializer, InvoiceFullDataSerializer, \
-    ExpanseDataSerializer, NestedItemsSerializer, NewItemsSerializer, ItemOtherfieldSerializer
+    ExpanseDataSerializer, ItemOtherfieldSerializer, InventorySerializer, InventorypostSerializer
 from rest_framework import generics
 from rest_framework.authtoken.models import Token
 from rest_framework import status
 from rest_framework.decorators import permission_classes
 from rest_framework.permissions import IsAuthenticated
-from .models import Company, Items, InvoiceItems, Invoice, Expanse, ItemOtherfield
+from .models import Company, Items, InvoiceItems, Invoice, Expanse, ItemOtherfield, InventoryItems
 from django.utils import timezone
 from datetime import timedelta
 from django.core.paginator import Paginator
@@ -110,7 +110,8 @@ class InvoiceView(APIView):
 class ItemsView(APIView):
     def get(self, request, *args, **kwargs):
         items = Items.objects.filter(created_by_user=request.user.id,
-                                     created_by_company=request.GET.get("created_by_company")).values()
+                                     created_by_company=request.GET.get("created_by_company")).order_by(
+            '-created_on').values()
         if items:
             return Response({"status": "success", "data": items}, status=status.HTTP_200_OK)
         else:
@@ -140,9 +141,53 @@ class InvoiceItemsView(APIView):
             serializer = InvoiceItemsSerializer(data=x)
             if serializer.is_valid():
                 serializer.save()
+                data = InventoryItems.objects.filter(item__id=serializer.data["ordered_item"])
+                print(data)
+                print(serializer.data)
+                print(serializer.data["ordered_item"])
+                if len(data) > 0:
+                    data[0].quantity = data[0].quantity - serializer.data['quantity']
+                    data[0].save()
+
             else:
                 return Response({"status": "error", "data": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
         return Response({"status": "success", "data": "bill generated"}, status=status.HTTP_200_OK)
+
+
+@permission_classes([IsAuthenticated])
+class InventoryView(APIView):
+    def get(self, request, *args, **kwargs):
+        items = InventoryItems.objects.filter(user=request.user.id,
+                                              company=request.GET.get("company")).order_by('-created_on')
+        serializer = InventorySerializer(items, many=True)
+
+        if items:
+            return Response({"status": "success", "data": serializer.data}, status=status.HTTP_200_OK)
+        else:
+            return Response({"status": "error", "data": "No any Inventory found."},
+                            status=status.HTTP_400_BAD_REQUEST)
+
+    def post(self, request, *args, **kwargs):
+        request.data._mutable = True
+        request.data['user'] = request.user.id
+        serializer = InventorypostSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+
+            return Response({"status": "success", "data": serializer.data}, status=status.HTTP_200_OK)
+        else:
+            return Response({"status": "error", "data": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
+
+    def put(self, request, *args, **kwargs):
+        request.data._mutable = True
+        request.data['user'] = request.user.id
+        instance = InventoryItems.objects.get(id=request.data['id'], company=request.data['company'])
+        instance.quantity = request.data['quantity']
+        instance.save()
+
+        return Response({"status": "success", "data": "data is updated"}, status=status.HTTP_200_OK)
+        # else:
+        #     return Response({"status": "error", "data": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
 
 
 @api_view(['POST'])
@@ -160,7 +205,7 @@ def Getallcompany(request):
     if company:
         return Response({"status": "success", "data": company}, status=status.HTTP_200_OK)
     else:
-        return Response({"status": "error", "data": "Company not found"}, status=status.HTTP_200_OK)
+        return Response({"status": "error", "data": "Company not found"}, status=status.HTTP_400_BAD_REQUEST)
 
 
 @api_view(['GET'])
@@ -241,8 +286,10 @@ def Getsendboxbill(request):
 
     paginator = Paginator(sendboxdata, 10)
     page_number = request.GET.get('page')
+
     if page_number is None:
         page_number = 1
+
     data = paginator.get_page(page_number)
     serialized_sendbox = NewInvoiceItemsSerializer(data, many=True)
 
@@ -283,7 +330,7 @@ class NewItemView(APIView):
         if company:
             parent_item = json.loads(request.data["parent_item"])
             request.data['created_by_user'] = request.user.id
-            serializer = NestedItemsSerializer(data=request.data)
+            serializer = ItemsSerializer(data=request.data)
 
             if serializer.is_valid():
                 post = serializer.save()
@@ -304,7 +351,7 @@ class NewItemView(APIView):
 @permission_classes([IsAuthenticated])
 class UpdateItemNew(generics.UpdateAPIView):
     queryset = Items.objects.all()
-    serializer_class = NewItemsSerializer
+    serializer_class = ItemsSerializer
     permission_classes = [IsAuthenticated]
 
     def get_object(self):
@@ -331,7 +378,6 @@ class UpdateItemNew(generics.UpdateAPIView):
                             return Response({"message": serializer_otherfield.errors},
                                             status=status.HTTP_400_BAD_REQUEST)
                     else:
-
                         ItemOtherfield.objects.create(parent_item=instance, field_value=items["field_value"],
                                                       field_name=items["field_name"],
                                                       field_type=items["field_type"])
@@ -347,8 +393,14 @@ class UpdateItemNew(generics.UpdateAPIView):
 def UpdateItem(request):
     request.data._mutable = True
     request.data['created_by_user'] = request.user.id
+
     itemdata = Items.objects.get(created_by_company=request.data["created_by_company"], id=request.data["id"])
+
+    if not request.data['item_image']:
+        request.data['item_image'] = itemdata.item_image
+
     serializer = ItemsSerializer(itemdata, data=request.data)
+
     if serializer.is_valid():
         serializer.save()
         return Response({"status": "success", "data": serializer.data}, status=status.HTTP_200_OK)
@@ -360,12 +412,15 @@ def UpdateItem(request):
 @permission_classes([IsAuthenticated])
 def UpdateCompany(request):
     request.data._mutable = True
-
     request.data['user'] = request.user.id
+
     companydata = Company.objects.get(id=request.data["id"], user=request.user.id)
+
     if not request.data['profile_image']:
         request.data['profile_image'] = companydata.profile_image
+
     serializer = CompanyDataSerializer(companydata, data=request.data)
+
     if serializer.is_valid():
         serializer.save()
         return Response({"status": "success", "data": serializer.data}, status=status.HTTP_200_OK)
@@ -379,6 +434,7 @@ def Dashboard(request):
     total_inboxdata_amount = Invoice.objects.filter(company_from=request.GET.get("company_id")).aggregate(Sum('total'))
     total_inboxdata_count = Invoice.objects.filter(company_from=request.GET.get("company_id")).aggregate(
         Count('invoice_no'))
+
     total_expansedata_amount = Expanse.objects.filter(company=request.GET.get("company_id")).aggregate(Sum('amount'))
     total_expansedata_count = Expanse.objects.filter(company=request.GET.get("company_id")).aggregate(
         Count('id'))
@@ -438,3 +494,11 @@ def DownloadInvoice(request):
     response['Content-Disposition'] = 'attachment; filename="static/output.pdf";'
 
     return response
+
+
+@api_view(['GET'])
+def Demo(request):
+    data = InventoryItems.objects.get(item=17)
+    d = InventorySerializer(data, many=True)
+    return Response({"status": "success", "card_data": d.data},
+                    status=status.HTTP_200_OK)

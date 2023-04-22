@@ -20,6 +20,7 @@ urlpatterns = [
     path('generate-invoice', views.InvoiceView.as_view(), name="invoice"),
     path('add-item', views.ItemsView.as_view(), name="invoiceitems"),
     path('add-ordered-item', views.InvoiceItemsView.as_view(), name="invoiceitems"),
+    path('inventory', views.InventoryView.as_view(), name="inventory"),
     # alldata fetching api
     path('getallcompany', views.Getallcompany, name="getallcompany"),
     path('getinboxbill', views.Getinboxbill, name="getinboxbill"),
@@ -34,5 +35,5 @@ urlpatterns = [
     path('sendmail', views.sendmail_to_coustomer, name="sendmail"),
     path('download-invoice', views.DownloadInvoice, name="downloadinvoice"),
     path('add-item-new', views.NewItemView.as_view(), name="demo"),
-    # path('demo', views.Demo.as_view(), name="demo"),
+    path('demo', views.Demo, name="demo"),
 ]

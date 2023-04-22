@@ -102,3 +102,11 @@ class InvoiceItems(models.Model):
     invoice_id = models.ForeignKey(Invoice, on_delete=models.CASCADE)
     ordered_item = models.ForeignKey(Items, on_delete=models.CASCADE)
     created_on = models.DateTimeField(auto_now_add=True)
+
+
+class InventoryItems(models.Model):
+    quantity = models.IntegerField(blank=True, null=True)
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    company = models.ForeignKey(Company, on_delete=models.CASCADE)
+    item = models.OneToOneField(Items, on_delete=models.CASCADE)
+    created_on = models.DateTimeField(auto_now_add=True)

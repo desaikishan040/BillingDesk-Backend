@@ -4,7 +4,7 @@ from rest_framework import serializers
 from django.contrib.auth.models import User
 from rest_framework.validators import UniqueValidator
 from django.contrib.auth.password_validation import validate_password
-from .models import Company, Invoice, Items, InvoiceItems, Expanse, ItemOtherfield
+from .models import Company, Invoice, Items, InvoiceItems, Expanse, ItemOtherfield, InventoryItems
 import requests
 import json
 
@@ -26,7 +26,7 @@ class RegisterSerializer(serializers.ModelSerializer):
     def validate(self, attrs):
         if attrs['password'] != attrs['password2']:
             raise serializers.ValidationError(
-                {"password": "Password fields didn't match."})
+                {"password": "Password fields doesn't match."})
         return attrs
 
     def create(self, validated_data):
@@ -53,12 +53,12 @@ class CompanyDataSerializer(serializers.ModelSerializer):
         }
 
         response = requests.request("POST", url, headers=headers, data=payload)
-
+        d = CompanyDataSerializer(self.instance)
         if json.loads(response.text)[0]["gst_id"] != 0:
             raise serializers.ValidationError(
                 {"GST_number": "GST number not valid"})
 
-        if Company.objects.filter(GST_number=attrs["GST_number"]) and attrs["user"] == None:
+        if d.data and d.data['GST_number'] != attrs["GST_number"] and Company.objects.filter(GST_number=attrs["GST_number"]):
             raise serializers.ValidationError(
                 {"GST_number": "GST number already exist"})
 
@@ -117,15 +117,14 @@ class ItemOtherfieldSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
 
-class NestedItemsSerializer(serializers.ModelSerializer):
+class InventorySerializer(serializers.ModelSerializer):
+    item = ItemsSerializer(read_only=True)
     class Meta:
-        model = Items
+        model = InventoryItems
         fields = '__all__'
 
 
-class NewItemsSerializer(serializers.ModelSerializer):
-    # parent_item = ItemOtherfieldSerializer(many=True)
-
+class InventorypostSerializer(serializers.ModelSerializer):
     class Meta:
-        model = Items
+        model = InventoryItems
         fields = '__all__'
