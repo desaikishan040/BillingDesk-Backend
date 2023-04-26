@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Company, Invoice
+from .models import Company, Invoice, Expanse, Items,InvoiceItems, InventoryItems,ItemOtherfield
 from django.contrib.admin import AdminSite
 
 # class MyAdminSite(AdminSite):
@@ -12,3 +12,8 @@ admin.site.site_header = 'Billing desk'
 # Register your models here.
 admin.site.register(Company)
 admin.site.register(Invoice)
+admin.site.register(Expanse)
+admin.site.register(Items)
+admin.site.register(InvoiceItems)
+admin.site.register(InventoryItems)
+admin.site.register(ItemOtherfield)
