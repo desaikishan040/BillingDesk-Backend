@@ -3,9 +3,11 @@
 <head>
     <title>Page Title</title>
     <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.0/dist/JsBarcode.all.min.js"></script>
+    <link rel="stylesheet" href=
+            "https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.3.7/css/bootstrap.min.css"/>
+
 </head>
 <body>
-
 <div class="card">
     {% for i in data %}
     {% if forloop.first %}
@@ -15,7 +17,8 @@
                 <div class="col-xl-9">
                     <p style="color: #7e8d9f;font-size: 20px;">Invoice >> <strong>ID:
                         #{{i.invoice_id.invoice_no}}</strong></p>
-                    <canvas id="barcode"></canvas>
+                    <img src="https://chart.googleapis.com/chart?cht=qr&chl=http://127.0.0.1:8000/download-invoice?invoice_id={{i.invoice_id.invoice_no}}&chs=160x160&chld=L|0"
+                         class="qr-code img-thumbnail img-responsive"/>
                     <input type="hidden" id="invoiid" value={{i.invoice_id.invoice_no}}>
                 </div>
 
@@ -154,18 +157,7 @@
 
 </div>
 <script>
-		// Get the barcode div
-		var barcodeDiv = document.getElementById("barcode");
-		var invoiid = document.getElementById("invoiid").value;
-		// Generate the barcode using JsBarcode
-		JsBarcode(barcodeDiv, "http://127.0.0.1:8000/download-invoice?invoice_id="+invoiid, {
-		    height: 50,
-		    width:1,
-			format: "CODE128",
-			displayValue: false,
-			fontSize: 20,
-			textAlign: "center"
-		});
+
 </script>
 </body>
 </html>

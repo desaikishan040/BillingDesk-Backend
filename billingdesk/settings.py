@@ -44,6 +44,7 @@ INSTALLED_APPS = [
 
     'home',
     'websocket',
+    'marketplace'
 ]
 
 ASGI_APPLICATION = 'billingdesk.asgi.application'
