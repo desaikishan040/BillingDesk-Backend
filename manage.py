@@ -3,7 +3,8 @@
 import os
 import sys
 
-
+sisigo4692@gmail.com
+Sisi@321
 def main():
     """Run administrative tasks."""
     os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'billingdesk.settings')
